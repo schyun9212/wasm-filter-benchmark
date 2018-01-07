@@ -1,6 +1,7 @@
 let PreviewCTX;
 
 const loadImage = src => {
+    while (container.childElementCount){ container.removeChild(container.lastChild); }
     const img = new Image();
     img.addEventListener("load", () => {
 	const canvas = document.createElement('canvas');
@@ -15,6 +16,8 @@ const loadImage = src => {
 };
 
 window.addEventListener('load', () => {
+
+    loadImage('./image.png');
 
     convert.addEventListener("click", () => {
 	while (container.lastChild.id != 'PreviewCanvas'){ container.removeChild(container.lastChild); }

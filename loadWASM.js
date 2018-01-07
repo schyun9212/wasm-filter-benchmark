@@ -16,7 +16,6 @@ function loadWASM(){
 		document.head.appendChild(script);
 
 		function buildWam() {
-		    console.log('Load');
 		    const wam = {};
 
 		    resolve(wam);
