@@ -17,6 +17,7 @@ function wasmFilter(image, width, height, index){
     // store wasm mem data
     FilterData.len = pixels.data.length;
     FilterData.mem = _malloc(FilterData.len);
+    FilterData.out = _malloc(FilterData.len);
     HEAPU8.set(pixels.data, FilterData.mem);
 
     /* target canvas used by webgl */
@@ -43,12 +44,15 @@ function wasmFilter(image, width, height, index){
 	    const flatKernel = kernel.reduce((acc, cur) => acc.concat(cur));
 	    const memKernel = _malloc(kLen * Float32Array.BYTES_PER_ELEMENT);
 	    HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
-	    _ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count);
+	    _ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
 	    _free(memKernel);
+	    const temp = FilterData.out;
+	    FilterData.out = FilterData.mem;
+	    FilterData.mem = temp;
 	},
 	sharpen : function (){
 	    kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-	    var divisor = 2, bias = 0, count = 1;
+	    var divisor = 1, bias = 0, count = 1;
 	    this.conv(kernel, divisor, bias, count);
 	},
 	unsharp : function (){
@@ -75,7 +79,7 @@ function wasmFilter(image, width, height, index){
 
 function JSsharpen(data, width, height){
     kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-    var divisor = 2, bias = 0, count = 1;
+    var divisor = 1, bias = 0, count = 1;
     return js_convFilter(data, width, height, kernel, divisor, bias, count);
 }
 
@@ -102,6 +106,7 @@ function js_convFilter(data, width, height, kernel, divisor, bias=0, count=1) {
   const w = kernel[0].length;
   const h = kernel.length;
   const half = Math.floor(h / 2);
+  var result = [];
   for (let i = 0; i < count; i += 1) {
     for (let y = 1; y < height - 1; y += 1) {
       for (let x = 1; x < width - 1; x += 1) {
@@ -117,11 +122,12 @@ function js_convFilter(data, width, height, kernel, divisor, bias=0, count=1) {
           }
         }
 
-        data[px + 0] = (1 / divisor) * r + bias;
-        data[px + 1] = (1 / divisor) * g + bias;
-        data[px + 2] = (1 / divisor) * b + bias;
+        result[px + 0] = (1 / divisor) * r + bias;
+        result[px + 1] = (1 / divisor) * g + bias;
+        result[px + 2] = (1 / divisor) * b + bias;
+	result[px + 3] = data[px + 3];
       }
     }
   }
-  return data;
+  return result;
 }

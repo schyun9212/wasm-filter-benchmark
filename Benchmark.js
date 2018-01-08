@@ -29,6 +29,7 @@ window.addEventListener('load', () => {
 	let start = performance.now();
 	FilterData.len = imageData.length;
 	FilterData.mem = _malloc(FilterData.len);
+	FilterData.out = _malloc(FilterData.len);
 	HEAPU8.set(imageData, FilterData.mem);
 	let end = performance.now();
 	console.log('[WASM] AllocTime : ' + Math.round((end - start)*100)/100 + ' ms');
@@ -75,17 +76,17 @@ window.addEventListener('load', () => {
 	wasmCanvas.id = 'wasmCanvas';
 	const wasmCtx = wasmCanvas.getContext('2d');
 
-	const divisor = 2, bias = 0, count = 1;
+	const divisor = 1, bias = 0, count = 1;
 	const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
 	const kWidth = kernel[0].length, kHeight = kernel.length;
 	const kLen = kWidth * kHeight;
 	const flatKernel = kernel.reduce((acc, cur) => acc.concat(cur));
 	const memKernel = _malloc(kLen * Float32Array.BYTES_PER_ELEMENT);
 	HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
-	_ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count);
+	_ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
 	_free(memKernel);
 	let wasmPixels = wasmCtx.createImageData(width, height);
-	const wasmResult = HEAPU8.subarray(FilterData.mem, FilterData.mem + FilterData.len);
+	const wasmResult = HEAPU8.subarray(FilterData.out, FilterData.out + FilterData.len);
 	wasmPixels.data.set(wasmResult);
 	wasmCtx.putImageData(wasmPixels, 0, 0);
 	container.appendChild(wasmCanvas);

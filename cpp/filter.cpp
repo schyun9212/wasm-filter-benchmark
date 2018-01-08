@@ -50,7 +50,7 @@ extern "C" {
     }
   }
 
-  void ConvFilter (uint8_t* data, int width, int height, float* kern, int kWidth, int kHeight, float divisor, float bias, int count) {
+  void ConvFilter (uint8_t* data, int width, int height, float* kern, int kWidth, int kHeight, float divisor, float bias, int count, uint8_t* out) {
 
     float r, g, b;
     int yy, xx, imageOffset, kernelOffset, pix;
@@ -75,9 +75,10 @@ extern "C" {
             }
           }
           pix = (width * y + x) * 4;
-          data[pix + 0] =  ((r / divisor)>255.0) ? 255.0 : ((r / divisor)<0.0) ? 0.0 : r / divisor;
-          data[pix + 1] =  ((g / divisor)>255.0) ? 255.0 : ((g / divisor)<0.0) ? 0.0 : g / divisor;
-          data[pix + 2] =  ((b / divisor)>255.0) ? 255.0 : ((b / divisor)<0.0) ? 0.0 : b / divisor;
+          out[pix + 0] =  ((r / divisor)>255.0) ? 255.0 : ((r / divisor)<0.0) ? 0.0 : r / divisor;
+          out[pix + 1] =  ((g / divisor)>255.0) ? 255.0 : ((g / divisor)<0.0) ? 0.0 : g / divisor;
+          out[pix + 2] =  ((b / divisor)>255.0) ? 255.0 : ((b / divisor)<0.0) ? 0.0 : b / divisor;
+          out[pix + 3] = data[pix + 3];
         }
       }
     }
