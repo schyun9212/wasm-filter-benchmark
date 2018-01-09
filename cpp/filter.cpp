@@ -16,11 +16,13 @@ extern "C" {
 Context* contexts[20];
 
 extern "C" {
-  void Sharpen(uint8_t *data, int width, int height, char *filter, char *id, int index){
-    //printf("[WASM] Sharpen \n");
+  void CreateShader(int width, int height, char *filter, char *id, int index){
     if (contexts[index]){ delete contexts[index]; }
-    //printf("id : %s, filter : %s, width : %d, height : %d, index : %d\n", id, filter, width, height, index );
     contexts[index] = new Context(width, height, filter, id);
+    // TODO: precompiling
+  }
+
+  void Sharpen(uint8_t *data, int index){
     contexts[index]->run(data);
     // TODO: free where?
   }

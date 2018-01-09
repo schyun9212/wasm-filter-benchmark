@@ -42,17 +42,20 @@ window.addEventListener('load', () => {
 	jsWebGlCanvas.width = width;
 	jsWebGlCanvas.height = height;
 	jsWebGlCanvas.id = 'jsWebGlCanvas';
-	const jsGlCtx = jsWebGlCanvas.getContext('webgl2');
 	container.appendChild(jsWebGlCanvas);
 
+	start = performance.now();
 	vertexShaderSource = document.getElementById('vertexShader').text;
 	fragmentShaderSource = document.getElementById('fragmentShader').text;
 
+	const jsGlCtx = jsWebGlCanvas.getContext('webgl2');
 	var vertexShader = createShader(jsGlCtx, jsGlCtx.VERTEX_SHADER, vertexShaderSource);
 	var fragmentShader = createShader(jsGlCtx, jsGlCtx.FRAGMENT_SHADER, fragmentShaderSource);
 
 	var jsWebGlProgram = createProgram(jsGlCtx, vertexShader, fragmentShader);
-	//let jsProgramObj = loadProgram(glCtx);
+	end = performance.now();
+	console.log('[JS with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
+
 	start = performance.now();
 	jsWebGlRun(jsGlCtx, imageData, width, height, jsWebGlProgram);
 	end = performance.now();
@@ -70,10 +73,10 @@ window.addEventListener('load', () => {
 
 	////////////////////////////////////////////////////////////////
 	// JS sharpen
-	//const jsResult = JSsharpen(imageData, width, height);
+	const jsResult = JSsharpen(imageData, width, height);
 
 	// JS unsharp
-	const jsResult = JSunsharp(imageData, width, height);
+	//const jsResult = JSunsharp(imageData, width, height);
 	////////////////////////////////////////////////////////////////
 
 	jsPixels.data.set(jsResult);
@@ -97,7 +100,12 @@ window.addEventListener('load', () => {
 	const filter = "Sharpen";
 	const memFilter = _malloc(filter.length+1);
 	Module.stringToUTF8(filter, memFilter, filter.length+1);
-	_Sharpen(FilterData.mem, width, height, memFilter, memID, 0);
+	_CreateShader(width, height, memFilter, memID, 0);
+	end = performance.now();
+	console.log('[WASM with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
+
+	start = performance.now();
+	_Sharpen(FilterData.mem, 0);
 	end = performance.now();
 	console.log('[WASM with WebGL] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
 	_free(memID);
@@ -114,12 +122,12 @@ window.addEventListener('load', () => {
 
 	///////////////////////////////////////////////////////////////
 	// indexes for sharpen
-	//const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-	//const divisor = 1, bias = 0, count = 1;
+	const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
+	const divisor = 1, bias = 0, count = 1;
 
 	// indexes for unsharp
-	const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
-	const divisor = -256, bias = 0, count = 1;
+	//const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
+	//const divisor = -256, bias = 0, count = 1;
 	///////////////////////////////////////////////////////////////
 
 	const kWidth = kernel[0].length, kHeight = kernel.length;

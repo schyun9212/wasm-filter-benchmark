@@ -1,5 +1,3 @@
-
-
 class Context {
 public:
     Context (int width, int height, char *filter, char * id);

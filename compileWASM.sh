@@ -4,7 +4,9 @@ CPP_FUNCS="[
   '_Brighten',
   '_Contrast',
   '_ConvFilter',
-  '_Sharpen'
+  '_Sharpen',
+  '_CompileShader',
+  '_CreateShader'
 ]"
 
 echo "compiling C++ to WASM ..."

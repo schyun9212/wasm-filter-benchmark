@@ -151,7 +151,6 @@ Context::Context (int w, int h, char *filter, char * id) {
     if (std::string(filter) == "textureLoad") {
         fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &texture_load_fragment_source);
         vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-
     }
     else if (std::string(filter) == "Sharpen") {
         //printf("[WASM] this is Sharpen filter\n");
