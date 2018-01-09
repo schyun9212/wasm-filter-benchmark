@@ -46,7 +46,11 @@ window.addEventListener('load', () => {
 
 	start = performance.now();
 	vertexShaderSource = document.getElementById('vertexShader').text;
-	fragmentShaderSource = document.getElementById('fragmentShader').text;
+
+	// Sharpen
+	//fragmentShaderSource = document.getElementById('SfragmentShader').text;
+	// Unsharp
+	fragmentShaderSource = document.getElementById('UfragmentShader').text;
 
 	const jsGlCtx = jsWebGlCanvas.getContext('webgl2');
 	var vertexShader = createShader(jsGlCtx, jsGlCtx.VERTEX_SHADER, vertexShaderSource);
@@ -73,10 +77,10 @@ window.addEventListener('load', () => {
 
 	////////////////////////////////////////////////////////////////
 	// JS sharpen
-	const jsResult = JSsharpen(imageData, width, height);
+	//const jsResult = JSsharpen(imageData, width, height);
 
 	// JS unsharp
-	//const jsResult = JSunsharp(imageData, width, height);
+	const jsResult = JSunsharp(imageData, width, height);
 	////////////////////////////////////////////////////////////////
 
 	jsPixels.data.set(jsResult);
@@ -97,7 +101,10 @@ window.addEventListener('load', () => {
 	container.appendChild(wasmWebGlCanvas);
 
 	start = performance.now();
-	const filter = "Sharpen";
+
+	//const filter = "Sharpen";
+	const filter = "Unsharp";
+
 	const memFilter = _malloc(filter.length+1);
 	Module.stringToUTF8(filter, memFilter, filter.length+1);
 	_CreateShader(width, height, memFilter, memID, 0);
@@ -122,12 +129,12 @@ window.addEventListener('load', () => {
 
 	///////////////////////////////////////////////////////////////
 	// indexes for sharpen
-	const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-	const divisor = 1, bias = 0, count = 1;
+	//const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
+	//const divisor = 1, bias = 0, count = 1;
 
 	// indexes for unsharp
-	//const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
-	//const divisor = -256, bias = 0, count = 1;
+	const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
+	const divisor = -256, bias = 0, count = 1;
 	///////////////////////////////////////////////////////////////
 
 	const kWidth = kernel[0].length, kHeight = kernel.length;

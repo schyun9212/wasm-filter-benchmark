@@ -16,7 +16,7 @@
 			   v_texCoord = texCoord;
 			}
 		</script>
-		<script id = "fragmentShader" type="notjs">
+		<script id = "SfragmentShader" type="notjs">
 			precision mediump float;
 			varying vec2 v_texCoord;
 			uniform sampler2D texture;
@@ -43,6 +43,54 @@
 			  vec4 sharpen = (5.0*n[4]) - n[1] - n[3] - n[5] - n[7];
 
 			  gl_FragColor = vec4( vec3(sharpen), 1.0 );
+			}
+		</script>
+		<script id = "UfragmentShader" type="notjs">
+			precision mediump float;
+			varying vec2 v_texCoord;
+			uniform sampler2D texture;
+			uniform float width;
+			uniform float height;
+			void main()
+			{
+			  vec4 pixel = texture2D(texture, v_texCoord);
+			  vec4 n[25];
+
+			  float w = 1.0 / width;
+			  float h = 1.0 / height;
+
+			  n[0] = texture2D(texture, v_texCoord + vec2(0.0, 0.0) );
+			  n[1] = texture2D(texture, v_texCoord + vec2(w, 0.0) );
+			  n[2] = texture2D(texture, v_texCoord + vec2(2.0*w, 0.0) );
+			  n[3] = texture2D(texture, v_texCoord + vec2(3.0*w, 0.0) );
+			  n[4] = texture2D(texture, v_texCoord + vec2(4.0*w, 0.0) );
+			  n[5] = texture2D(texture, v_texCoord + vec2(0.0, h) );
+			  n[6] = texture2D(texture, v_texCoord + vec2(w, h) );
+			  n[7] = texture2D(texture, v_texCoord + vec2(2.0*w, h) );
+			  n[8] = texture2D(texture, v_texCoord + vec2(3.0*w, h) );
+			  n[9] = texture2D(texture, v_texCoord + vec2(4.0*w, h) );
+			  n[10] = texture2D(texture, v_texCoord + vec2(0, 2.0*h) );
+			  n[11] = texture2D(texture, v_texCoord + vec2(w, 2.0*h) );
+			  n[12] = texture2D(texture, v_texCoord + vec2(2.0*w, 2.0*h) );
+			  n[13] = texture2D(texture, v_texCoord + vec2(3.0*w, 2.0*h) );
+			  n[14] = texture2D(texture, v_texCoord + vec2(4.0*w, 2.0*h) );
+			  n[15] = texture2D(texture, v_texCoord + vec2(0, 3.0*h) );
+			  n[16] = texture2D(texture, v_texCoord + vec2(w, 3.0*h) );
+			  n[17] = texture2D(texture, v_texCoord + vec2(2.0*w, 3.0*h) );
+			  n[18] = texture2D(texture, v_texCoord + vec2(3.0*w, 3.0*h) );
+			  n[19] = texture2D(texture, v_texCoord + vec2(4.0*w, 3.0*h) );
+			  n[20] = texture2D(texture, v_texCoord + vec2(0, 4.0*h) );
+			  n[21] = texture2D(texture, v_texCoord + vec2(w, 4.0*h) );
+			  n[22] = texture2D(texture, v_texCoord + vec2(2.0*w, 4.0*h) );
+			  n[23] = texture2D(texture, v_texCoord + vec2(3.0*w, 4.0*h) );
+			  n[24] = texture2D(texture, v_texCoord + vec2(4.0*w, 4.0*h) );
+
+			  vec4 unsharp = n[0] + 4.0*n[1] + 6.0*n[2] + 4.0*n[3] + n[4]
+							+ 4.0*n[5] + 16.0*n[6] + 24.0*n[7] + 16.0*n[8] + 4.0*n[9]
+							+ 6.0*n[10] + 24.0*n[11] - 476.0*n[12] + 24.0*n[13] + 6.0*n[14]
+							+ 4.0*n[15] + 16.0*n[16] + 24.0*n[17] + 16.0*n[18] + 4.0*n[19]
+							+ n[20] + 4.0*n[21] + 6.0*n[22] + 4.0*n[23] + n[24];
+			  gl_FragColor = vec4( vec3(unsharp)*vec3(-0.0039), 1.0 );
 			}
 		</script>
 		<script src = "./Benchmark.js"></script>

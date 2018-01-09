@@ -91,6 +91,54 @@ std::string sharpen_fragment_source =
     "  gl_FragColor = vec4( vec3(sharpen), 1.0 );   \n"
     "}                                                   \n";
 
+std::string unsharp_fragment_source =
+    "precision mediump float;                            \n"
+    "varying vec2 v_texCoord;                            \n"
+    "uniform sampler2D texture;                        \n"
+    "uniform float width;  \n"
+    "uniform float height;  \n"
+    "void main()                                         \n"
+    "{                                                   \n"
+    "  vec4 pixel = texture2D(texture, v_texCoord);              \n"
+    "  vec4 n[25];\n"
+
+    "  float w = 1.0 / width;\n"
+    "  float h = 1.0 / height;\n"
+
+    "  n[0] = texture2D(texture, v_texCoord + vec2(0.0, 0.0) );\n"
+    "  n[1] = texture2D(texture, v_texCoord + vec2(w, 0.0) );\n"
+    "  n[2] = texture2D(texture, v_texCoord + vec2(2.0*w, 0.0) );\n"
+    "  n[3] = texture2D(texture, v_texCoord + vec2(3.0*w, 0.0) );\n"
+    "  n[4] = texture2D(texture, v_texCoord + vec2(4.0*w, 0.0) );\n"
+    "  n[5] = texture2D(texture, v_texCoord + vec2(0.0, h) );\n"
+    "  n[6] = texture2D(texture, v_texCoord + vec2(w, h) );\n"
+    "  n[7] = texture2D(texture, v_texCoord + vec2(2.0*w, h) );\n"
+    "  n[8] = texture2D(texture, v_texCoord + vec2(3.0*w, h) );\n"
+    "  n[9] = texture2D(texture, v_texCoord + vec2(4.0*w, h) );\n"
+    "  n[10] = texture2D(texture, v_texCoord + vec2(0, 2.0*h) );\n"
+    "  n[11] = texture2D(texture, v_texCoord + vec2(w, 2.0*h) );\n"
+    "  n[12] = texture2D(texture, v_texCoord + vec2(2.0*w, 2.0*h) );\n"
+    "  n[13] = texture2D(texture, v_texCoord + vec2(3.0*w, 2.0*h) );\n"
+    "  n[14] = texture2D(texture, v_texCoord + vec2(4.0*w, 2.0*h) );\n"
+    "  n[15] = texture2D(texture, v_texCoord + vec2(0, 3.0*h) );\n"
+    "  n[16] = texture2D(texture, v_texCoord + vec2(w, 3.0*h) );\n"
+    "  n[17] = texture2D(texture, v_texCoord + vec2(2.0*w, 3.0*h) );\n"
+    "  n[18] = texture2D(texture, v_texCoord + vec2(3.0*w, 3.0*h) );\n"
+    "  n[19] = texture2D(texture, v_texCoord + vec2(4.0*w, 3.0*h) );\n"
+    "  n[20] = texture2D(texture, v_texCoord + vec2(0, 4.0*h) );\n"
+    "  n[21] = texture2D(texture, v_texCoord + vec2(w, 4.0*h) );\n"
+    "  n[22] = texture2D(texture, v_texCoord + vec2(2.0*w, 4.0*h) );\n"
+    "  n[23] = texture2D(texture, v_texCoord + vec2(3.0*w, 4.0*h) );\n"
+    "  n[24] = texture2D(texture, v_texCoord + vec2(4.0*w, 4.0*h) );\n"
+
+    "  vec4 unsharp = n[0] + 4.0*n[1] + 6.0*n[2] + 4.0*n[3] + n[4]\n"
+    "               + 4.0*n[5] + 16.0*n[6] + 24.0*n[7] + 16.0*n[8] + 4.0*n[9]\n"
+    "               + 6.0*n[10] + 24.0*n[11] - 476.0*n[12] + 24.0*n[13] + 6.0*n[14]\n"
+    "               + 4.0*n[15] + 16.0*n[16] + 24.0*n[17] + 16.0*n[18] + 4.0*n[19]\n"
+    "               + n[20] + 4.0*n[21] + 6.0*n[22] + 4.0*n[23] + n[24];\n"
+    "  gl_FragColor = vec4( vec3(unsharp)*vec3(-0.0039), 1.0 );   \n"
+    "}                                                   \n";
+
 
 GLuint CompileShader (GLenum type, std::string *source) {
 
@@ -153,8 +201,11 @@ Context::Context (int w, int h, char *filter, char * id) {
         vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
     }
     else if (std::string(filter) == "Sharpen") {
-        //printf("[WASM] this is Sharpen filter\n");
         fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &sharpen_fragment_source);
+        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+    }
+    else if (std::string(filter) == "Unsharp") {
+        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &unsharp_fragment_source);
         vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
     }
     else if (std::string(filter) == "edgeDetect") {
