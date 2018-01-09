@@ -106,7 +106,7 @@ function js_convFilter(data, width, height, kernel, divisor, bias=0, count=1) {
   const w = kernel[0].length;
   const h = kernel.length;
   const half = Math.floor(h / 2);
-  var result = [];
+  var result = new Uint8ClampedArray(data.length);
   for (let i = 0; i < count; i += 1) {
     for (let y = 1; y < height - 1; y += 1) {
       for (let x = 1; x < width - 1; x += 1) {

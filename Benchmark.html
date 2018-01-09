@@ -6,6 +6,45 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
 		<link rel="stylesheet" type="text/css" href="index.css">
 		<script src = "./loadWASM.js"></script>
+		<script id = "vertexShader" type="notjs">
+			attribute vec4 position;
+			attribute vec2 texCoord;
+			varying vec2 v_texCoord;
+			void main()
+			{
+			   gl_Position = position;
+			   v_texCoord = texCoord;
+			}
+		</script>
+		<script id = "fragmentShader" type="notjs">
+			precision mediump float;
+			varying vec2 v_texCoord;
+			uniform sampler2D texture;
+			uniform float width;
+			uniform float height;
+			void main()
+			{
+			  vec4 pixel = texture2D(texture, v_texCoord);
+			  vec4 n[9];
+
+			  float w = 1.0 / width;
+			  float h = 1.0 / height;
+
+			  n[0] = texture2D(texture, v_texCoord + vec2(0.0, 0.0) );
+			  n[1] = texture2D(texture, v_texCoord + vec2(w, 0.0) );
+			  n[2] = texture2D(texture, v_texCoord + vec2(2.0*w, 0.0) );
+			  n[3] = texture2D(texture, v_texCoord + vec2(0.0*w, h) );
+			  n[4] = texture2D(texture, v_texCoord + vec2(w, h) );
+			  n[5] = texture2D(texture, v_texCoord + vec2(2.0*w, h) );
+			  n[6] = texture2D(texture, v_texCoord + vec2(0.0, 2.0*h) );
+			  n[7] = texture2D(texture, v_texCoord + vec2(w, 2.0*h) );
+			  n[8] = texture2D(texture, v_texCoord + vec2(2.0*w, 2.0*h) );
+
+			  vec4 sharpen = (5.0*n[4]) - n[1] - n[3] - n[5] - n[7];
+
+			  gl_FragColor = vec4( vec3(sharpen), 1.0 );
+			}
+		</script>
 		<script src = "./Benchmark.js"></script>
 	</head>
 	<body>
