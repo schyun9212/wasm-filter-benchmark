@@ -16,9 +16,9 @@ extern "C" {
 Context* contexts[20];
 
 extern "C" {
-  void CreateShader(int width, int height, char *filter, char *id, int index){
+  void CreateShader(int width, int height, float alpha, float brightness, char *filter, char *id, int index){
     if (contexts[index]){ delete contexts[index]; }
-    contexts[index] = new Context(width, height, filter, id);
+    contexts[index] = new Context(width, height, alpha, brightness, filter, id);
     // TODO: precompiling
   }
 

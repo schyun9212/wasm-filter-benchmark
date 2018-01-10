@@ -20,6 +20,27 @@ std::string texture_load_fragment_source =
     "  gl_FragColor = texture2D( texture, v_texCoord );   \n"
     "}                                                   \n";
 
+std::string contrast_fragment_source =
+    "precision mediump float;                            \n"
+    "varying vec2 v_texCoord;                            \n"
+    "uniform sampler2D texture;                        \n"
+    "uniform float alpha;  \n"
+    "void main()                                         \n"
+    "{                                                   \n"
+    "  vec4 contrast = texture2D( texture, v_texCoord); \n"
+    "  gl_FragColor = vec4( vec3(contrast), alpha);   \n"
+    "}                                                   \n";
+
+std::string brightness_fragment_source =
+    "precision mediump float;                            \n"
+    "varying vec2 v_texCoord;                            \n"
+    "uniform sampler2D texture;                        \n"
+    "uniform float brightness;  \n"
+    "void main()                                         \n"
+    "{                                                   \n"
+    "  vec4 contrast = texture2D( texture, v_texCoord); \n"
+    "  gl_FragColor = vec4( vec3(contrast) + vec3(brightness), 1.0 );   \n"
+    "}                                                   \n";
 
 std::string edge_detect_fragment_source =
     "precision mediump float;                            \n"
@@ -177,10 +198,12 @@ GLuint CompileShader (GLenum type, std::string *source) {
 }
 
 
-Context::Context (int w, int h, char *filter, char * id) {
+Context::Context (int w, int h, float a, float b, char *filter, char * id) {
 
     width = w;
     height = h;
+    alpha = a;
+    brightness = b;
 
     //printf("[Context] id : %s, filter : %s\n",id, filter);
     // Context configurations
@@ -206,6 +229,14 @@ Context::Context (int w, int h, char *filter, char * id) {
     }
     else if (std::string(filter) == "Unsharp") {
         fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &unsharp_fragment_source);
+        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+    }
+    else if (std::string(filter) == "Contrast") {
+        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &contrast_fragment_source);
+        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+    }
+    else if (std::string(filter) == "Brightness") {
+        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &brightness_fragment_source);
         vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
     }
     else if (std::string(filter) == "edgeDetect") {
@@ -249,8 +280,12 @@ void Context::run (uint8_t* buffer) {
     // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glUniform.xhtml
     float widthUniform = glGetUniformLocation(programObject, "width");
     float heightUniform = glGetUniformLocation(programObject, "height");
+    float alphaUniform = glGetUniformLocation(programObject, "alpha");
+    float brightnessUniform = glGetUniformLocation(programObject, "brightness");
     glUniform1f(widthUniform, (float) width);
     glUniform1f(heightUniform, (float) height);
+    glUniform1f(alphaUniform, (float) alpha);
+    glUniform1f(brightnessUniform, (float) brightness);
 
 
     // Generate a texture object
@@ -289,6 +324,9 @@ void Context::run (uint8_t* buffer) {
 
     glEnableVertexAttribArray(positionLoc);
     glEnableVertexAttribArray(texCoordLoc);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
 
     // Draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0); // indice 순서로 삼각형을 그린다 =>사각형이 그려짐

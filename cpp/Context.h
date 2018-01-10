@@ -1,6 +1,6 @@
 class Context {
 public:
-    Context (int width, int height, char *filter, char * id);
+    Context (int width, int height, float alpha, float brightness, char *filter, char * id);
 
     ~Context (void);
 
@@ -9,6 +9,8 @@ public:
 private:
     int width;
     int height;
+    float alpha;
+    float brightness;
 
     GLuint programObject;
     GLuint vertexShader;

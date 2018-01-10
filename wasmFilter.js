@@ -20,16 +20,6 @@ function wasmFilter(image, width, height, index){
     FilterData.out = _malloc(FilterData.len);
     HEAPU8.set(pixels.data, FilterData.mem);
 
-    /* target canvas used by webgl */
-    const targetCanvas = document.createElement('canvas');
-    targetCanvas.width = width;
-    targetCanvas.height = height;
-    targetCanvas.id = "glCanvas_"+ index;
-    const memID = _malloc(targetCanvas.id.length + 1);
-    Module.stringToUTF8(targetCanvas.id, memID, targetCanvas.id.length + 1);
-    const GLcontext = targetCanvas.getContext("webgl2");
-    dummyCanvas.appendChild(targetCanvas);
-
     return {
 	contrast : function( alpha ){
 	    _Contrast(FilterData.mem, FilterData.len, alpha );
@@ -62,17 +52,6 @@ function wasmFilter(image, width, height, index){
 	},
 	getImage : function(){
 	    return HEAPU8.subarray(FilterData.mem, FilterData.mem + FilterData.len);
-	},
-	glSharpen : function (){
-	  const filter = "Sharpen";
-	  const memFilter = _malloc(filter.length+1);
-	  Module.stringToUTF8(filter, memFilter, filter.length+1);
-	  _Sharpen(FilterData.mem, width, height, memFilter, memID, index);
-	  _free(memFilter);
-	},
-	glGetImage : function(){
-	    // return Canvas? ImageData?
-	    return targetCanvas;
 	}
     }
 }
@@ -100,6 +79,16 @@ function jsShadow(context, layerlevel, shadowPixel) {
 	for(i = 0; i < layerlevel ; i++) {
 		context.fillRect(shadowPixel, shadowPixel, cssRulesInOffsetWidth - shadowPixel * 2, cssRulesInOffsetHeight - shadowPixel * 2); // shadow effect
 	}
+}
+
+function jsBrightness(context, imageObj, shadowPixel, fillv) {
+	var cssRulesInOffsetWidth = context.canvas.width;
+	var cssRulesInOffsetHeight = context.canvas.height;
+
+	context.shadowBlur = 0;
+	context.drawImage(imageObj, 0, 0, cssRulesInOffsetWidth - shadowPixel, cssRulesInOffsetHeight - shadowPixel); // draw image
+	context.fillStyle = "rgba(0, 0, 0, " + fillv + ")";
+	context.fillRect(0, 0, cssRulesInOffsetWidth - shadowPixel, cssRulesInOffsetHeight - shadowPixel); // brightness filter
 }
 
 function js_convFilter(data, width, height, kernel, divisor, bias=0, count=1) {

@@ -100,14 +100,20 @@ window.addEventListener('load', () => {
 	//const wasmGlCtx = wasmWebGlCanvas.getContext('webgl2');
 	container.appendChild(wasmWebGlCanvas);
 
+	let alpha = 1.0;
+	let brightness = 0;
 	start = performance.now();
 
 	//const filter = "Sharpen";
 	const filter = "Unsharp";
+	//const filter = "Brightness";
+	//brightness = 40/255;
+	//const filter = "Contrast";
+	//alpha = 0.3;
 
 	const memFilter = _malloc(filter.length+1);
 	Module.stringToUTF8(filter, memFilter, filter.length+1);
-	_CreateShader(width, height, memFilter, memID, 0);
+	_CreateShader(width, height, alpha, brightness, memFilter, memID, 0);
 	end = performance.now();
 	console.log('[WASM with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
 
@@ -144,6 +150,7 @@ window.addEventListener('load', () => {
 	HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
 	_ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
 	_free(memKernel);
+
 	let wasmPixels = wasmCtx.createImageData(width, height);
 	const wasmResult = HEAPU8.subarray(FilterData.out, FilterData.out + FilterData.len);
 	wasmPixels.data.set(wasmResult);
