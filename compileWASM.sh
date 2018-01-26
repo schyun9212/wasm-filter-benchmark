@@ -4,8 +4,7 @@ CPP_FUNCS="[
   '_Brighten',
   '_Contrast',
   '_ConvFilter',
-  '_Sharpen',
-  '_CompileShader',
+  '_Filter',
   '_CreateShader'
 ]"
 

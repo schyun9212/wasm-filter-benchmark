@@ -13,18 +13,17 @@ extern "C" {
 #include <iostream>
 
 
-Context* contexts[20];
+Context* contexts;
 
 extern "C" {
-  void CreateShader(int width, int height, float alpha, float brightness, char *filter, char *id, int index){
-    if (contexts[index]){ delete contexts[index]; }
-    contexts[index] = new Context(width, height, alpha, brightness, filter, id);
+  void CreateShader(char *id){
+    if (contexts){ delete contexts; }
+    contexts = new Context(id);
     // TODO: precompiling
   }
 
-  void Sharpen(uint8_t *data, int index){
-    contexts[index]->run(data);
-    // TODO: free where?
+  void Filter(uint8_t *data, int width, int height, float alpha, int index){
+    contexts->run(data, width, height, alpha, index);
   }
 
   void Contrast (uint8_t* data, int len, float alpha) {

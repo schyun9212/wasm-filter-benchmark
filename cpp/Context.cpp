@@ -20,26 +20,15 @@ std::string texture_load_fragment_source =
     "  gl_FragColor = texture2D( texture, v_texCoord );   \n"
     "}                                                   \n";
 
-std::string contrast_fragment_source =
+std::string brightness_fragment_source =
     "precision mediump float;                            \n"
     "varying vec2 v_texCoord;                            \n"
     "uniform sampler2D texture;                        \n"
     "uniform float alpha;  \n"
     "void main()                                         \n"
     "{                                                   \n"
-    "  vec4 contrast = texture2D( texture, v_texCoord); \n"
-    "  gl_FragColor = vec4( vec3(contrast), alpha);   \n"
-    "}                                                   \n";
-
-std::string brightness_fragment_source =
-    "precision mediump float;                            \n"
-    "varying vec2 v_texCoord;                            \n"
-    "uniform sampler2D texture;                        \n"
-    "uniform float brightness;  \n"
-    "void main()                                         \n"
-    "{                                                   \n"
-    "  vec4 contrast = texture2D( texture, v_texCoord); \n"
-    "  gl_FragColor = vec4( vec3(contrast) + vec3(brightness), 1.0 );   \n"
+    "  vec4 brightness = texture2D( texture, v_texCoord); \n"
+    "  gl_FragColor = vec4( vec3(brightness), alpha);   \n"
     "}                                                   \n";
 
 std::string edge_detect_fragment_source =
@@ -198,12 +187,7 @@ GLuint CompileShader (GLenum type, std::string *source) {
 }
 
 
-Context::Context (int w, int h, float a, float b, char *filter, char * id) {
-
-    width = w;
-    height = h;
-    alpha = a;
-    brightness = b;
+Context::Context (char * id) {
 
     //printf("[Context] id : %s, filter : %s\n",id, filter);
     // Context configurations
@@ -218,42 +202,46 @@ Context::Context (int w, int h, float a, float b, char *filter, char * id) {
     context = emscripten_webgl_create_context(id, &attrs);
     emscripten_webgl_make_context_current(context);
 
+    GLuint vertexShader;
+    GLuint fragmentShader;
+
     // Compile shaders
-    if (std::string(filter) == "textureLoad") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &texture_load_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
-    else if (std::string(filter) == "Sharpen") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &sharpen_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
-    else if (std::string(filter) == "Unsharp") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &unsharp_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
-    else if (std::string(filter) == "Contrast") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &contrast_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
-    else if (std::string(filter) == "Brightness") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &brightness_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
-    else if (std::string(filter) == "edgeDetect") {
-        fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &edge_detect_fragment_source);
-        vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
-    }
+    int i;
+    for (i = 0; i < 5; i++){
+        switch(i){
+            case 0:
+                fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &texture_load_fragment_source);
+                vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+                break;
+            case 1:
+                fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &sharpen_fragment_source);
+                vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+                break;
+            case 2:
+                fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &unsharp_fragment_source);
+                vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+                break;
+            case 3:
+                fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &brightness_fragment_source);
+                vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+                break;
+            case 4:
+                fragmentShader = CompileShader(GL_FRAGMENT_SHADER, &edge_detect_fragment_source);
+                vertexShader = CompileShader(GL_VERTEX_SHADER, &vertex_source);
+                break;
+        }
+        // Build program
+        programObject[i] = glCreateProgram();
 
-    // Build program
-    programObject = glCreateProgram();
+        glAttachShader(programObject[i], vertexShader);
+        glAttachShader(programObject[i], fragmentShader);
 
-    glAttachShader(programObject, vertexShader);
-    glAttachShader(programObject, fragmentShader);
+        glBindAttribLocation(programObject[i], 0, "position");
 
-    glBindAttribLocation(programObject, 0, "position");
-
-    glLinkProgram(programObject);
-    glValidateProgram(programObject);
+        glLinkProgram(programObject[i]);
+        glValidateProgram(programObject[i]);
+    }
+    //emscripten_webgl_make_context_current(context);
 }
 
 Context::~Context (void) {
@@ -261,31 +249,29 @@ Context::~Context (void) {
 }
 
 
-void Context::run (uint8_t* buffer) {
+void Context::run (uint8_t* buffer, int width, int height, float alpha, int index) {
 
     // Make the context current and use the program
     emscripten_webgl_make_context_current(context);
-    glUseProgram( programObject );
+    glUseProgram( programObject[index] );
 
     GLuint texId;
     GLuint vertexObject;
     GLuint indexObject;
 
     // Get the attribute/sampler locations
-    GLint positionLoc = glGetAttribLocation(programObject, "position"); //position이라는 이름으로 바인딩된 lcation을 불러온다.
-    GLint texCoordLoc = glGetAttribLocation(programObject, "texCoord");
-    GLint textureLoc = glGetUniformLocation(programObject, "texture");
+    GLint positionLoc = glGetAttribLocation(programObject[index], "position"); //position이라는 이름으로 바인딩된 lcation을 불러온다.
+    GLint texCoordLoc = glGetAttribLocation(programObject[index], "texCoord");
+    GLint textureLoc = glGetUniformLocation(programObject[index], "texture");
 
     // For "ERROR :GL_INVALID_OPERATION : glUniform1i: wrong uniform function for type"
     // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glUniform.xhtml
-    float widthUniform = glGetUniformLocation(programObject, "width");
-    float heightUniform = glGetUniformLocation(programObject, "height");
-    float alphaUniform = glGetUniformLocation(programObject, "alpha");
-    float brightnessUniform = glGetUniformLocation(programObject, "brightness");
+    float widthUniform = glGetUniformLocation(programObject[index], "width");
+    float heightUniform = glGetUniformLocation(programObject[index], "height");
+    float alphaUniform = glGetUniformLocation(programObject[index], "alpha");
     glUniform1f(widthUniform, (float) width);
     glUniform1f(heightUniform, (float) height);
     glUniform1f(alphaUniform, (float) alpha);
-    glUniform1f(brightnessUniform, (float) brightness);
 
 
     // Generate a texture object

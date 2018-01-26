@@ -1,122 +1,63 @@
-function wasmFilter(image, width, height, index){
-    var FilterData = new Object;
+function WebGLFilter(){
 
-    /* A preview canvas to get image pixel data */
-    var offscreenCanvas = document.createElement('canvas');
-    var context = offscreenCanvas.getContext('2d');
+  // wasm WebGL Filtering
+  let start = performance.now();
+  const wasmWebGlCanvas = document.createElement('canvas');
+  wasmWebGlCanvas.id = 'wasmWebGlCanvas';
+  const memID = _malloc(wasmWebGlCanvas.id.length + 1);
+  Module.stringToUTF8(wasmWebGlCanvas.id, memID, wasmWebGlCanvas.id.length + 1);
+  dummyCanvas.appendChild(wasmWebGlCanvas);
+  _CreateShader(memID);
+  let end = performance.now();
+  console.log('[WASM with WebGL] Compile Time : ' + Math.round((end-start)*100)/100 + ' ms');
 
-    context.canvas.width = width;
-    context.canvas.height = height;
+  var tags = {
+    'LOAD' : 0,
+    'SHARPEN' : 1,
+    'UNSHARP' : 2,
+    'BRIGHTNESS' : 3,
+    'EDGEDECTION' : 4
+  };
 
-    // draw image to canvas
-    context.drawImage(image, 0, 0, width, height);
+  return  {
+    wasmFilter : function(imgObj, width, height){
 
-    // get pixel data from canvas
-    var pixels = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+      let start = performance.now();
+      FilterData = new Object();
 
-    // store wasm mem data
-    FilterData.len = pixels.data.length;
-    FilterData.mem = _malloc(FilterData.len);
-    FilterData.out = _malloc(FilterData.len);
-    HEAPU8.set(pixels.data, FilterData.mem);
+      /* A preview canvas to get image pixel data */
+      var offscreenCanvas = document.createElement('canvas');
+      var context = offscreenCanvas.getContext('2d');
 
-    return {
-	contrast : function( alpha ){
-	    _Contrast(FilterData.mem, FilterData.len, alpha );
-	},
-	brightness : function( brightness ){
-	    _Brighten(FilterData.mem, FilterData.len, brightness);
-	},
-	conv : function ( kernel, divisor, bias, count){
-	    const kWidth = kernel[0].length;
-	    const kHeight = kernel.length;
-	    const kLen = kWidth * kHeight;
-	    const flatKernel = kernel.reduce((acc, cur) => acc.concat(cur));
-	    const memKernel = _malloc(kLen * Float32Array.BYTES_PER_ELEMENT);
-	    HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
-	    _ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
-	    _free(memKernel);
-	    const temp = FilterData.out;
-	    FilterData.out = FilterData.mem;
-	    FilterData.mem = temp;
-	},
-	sharpen : function (){
-	    kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-	    var divisor = 1, bias = 0, count = 1;
-	    this.conv(kernel, divisor, bias, count);
-	},
-	unsharp : function (){
-	    kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
-	    var divisor = -256, bias = 0, count = 1;
-	    this.conv(kernel, divisor, bias, count);
+      context.canvas.width = width;
+      context.canvas.height = height;
+
+      // draw image to canvas
+      context.drawImage(imgObj, 0, 0, width, height);
+
+      // get pixel data from canvas
+      var pixels = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+
+      // store wasm mem data
+      FilterData.len = pixels.data.length;
+      FilterData.mem = _malloc(FilterData.len);
+      HEAPU8.set(pixels.data, FilterData.mem);
+      let end = performance.now();
+      console.log('Allocation Time : ' + Math.round((end-start)*100)/100 + ' ms');
+
+      return {
+	Filter : function (tag, alpha = 1.0){
+	  start = performance.now();
+	  wasmWebGlCanvas.width = width;
+	  wasmWebGlCanvas.height = height;
+	  _Filter(FilterData.mem, width, height, alpha, tags[tag]);
+	  end = performance.now();
+	  console.log('Filtering Time : ' + Math.round((end-start)*100)/100 + ' ms');
 	},
 	getImage : function(){
-	    return HEAPU8.subarray(FilterData.mem, FilterData.mem + FilterData.len);
+	  return HEAPU8.subarray(FilterData.mem, FilterData.mem + FilterData.len);
 	}
-    }
-}
-
-function JSsharpen(data, width, height){
-    kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-    var divisor = 1, bias = 0, count = 1;
-    return js_convFilter(data, width, height, kernel, divisor, bias, count);
-}
-
-function JSunsharp(data, width, height){
-    kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
-    var divisor = -256, bias = 0, count = 1;
-    return js_convFilter(data, width, height, kernel, divisor, bias, count);
-}
-
-function jsShadow(context, layerlevel, shadowPixel) {
-	context.shadowColor = 'black';
-	context.fillStyle = "black";
-	context.shadowBlur = 100;
-
-	var cssRulesInOffsetWidth = context.canvas.width;
-	var cssRulesInOffsetHeight = context.canvas.height;
-	var i = 0;
-	for(i = 0; i < layerlevel ; i++) {
-		context.fillRect(shadowPixel, shadowPixel, cssRulesInOffsetWidth - shadowPixel * 2, cssRulesInOffsetHeight - shadowPixel * 2); // shadow effect
-	}
-}
-
-function jsBrightness(context, imageObj, shadowPixel, fillv) {
-	var cssRulesInOffsetWidth = context.canvas.width;
-	var cssRulesInOffsetHeight = context.canvas.height;
-
-	context.shadowBlur = 0;
-	context.drawImage(imageObj, 0, 0, cssRulesInOffsetWidth - shadowPixel, cssRulesInOffsetHeight - shadowPixel); // draw image
-	context.fillStyle = "rgba(0, 0, 0, " + fillv + ")";
-	context.fillRect(0, 0, cssRulesInOffsetWidth - shadowPixel, cssRulesInOffsetHeight - shadowPixel); // brightness filter
-}
-
-function js_convFilter(data, width, height, kernel, divisor, bias=0, count=1) {
-  const w = kernel[0].length;
-  const h = kernel.length;
-  const half = Math.floor(h / 2);
-  var result = new Uint8ClampedArray(data.length);
-  for (let i = 0; i < count; i += 1) {
-    for (let y = 1; y < height - 1; y += 1) {
-      for (let x = 1; x < width - 1; x += 1) {
-        const px = (y * width + x) * 4;  // pixel index
-        let r = 0, g = 0, b = 0;
-
-        for (let cy = 0; cy < h; ++cy) {
-          for (let cx = 0; cx < w; ++cx) {
-            const cpx = ((y + (cy - half)) * width + (x + (cx - half))) * 4;
-            r += data[cpx + 0] * kernel[cy][cx];
-            g += data[cpx + 1] * kernel[cy][cx];
-            b += data[cpx + 2] * kernel[cy][cx];
-          }
-        }
-
-        result[px + 0] = (1 / divisor) * r + bias;
-        result[px + 1] = (1 / divisor) * g + bias;
-        result[px + 2] = (1 / divisor) * b + bias;
-	result[px + 3] = data[px + 3];
       }
     }
   }
-  return result;
 }

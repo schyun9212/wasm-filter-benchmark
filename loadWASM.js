@@ -33,7 +33,17 @@ loadWASM().then(module => {
     wam = module;
     let b = performance.now();
     console.log("[WASM] JS Loading time : " + Math.round((b-c)*100)/100 + ' ms');
-    let script = document.createElement('script');
+    script = document.createElement('script');
     script.src = './wasmFilter.js';
+    script.onload = function(){
+	loadScript('./Benchmark.js');
+    }
     document.head.appendChild(script);
+
+    function loadScript(src){
+	script = document.createElement('script');
+	script.src = src;
+	document.head.appendChild(script);
+    }
 });
+
