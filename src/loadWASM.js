@@ -3,7 +3,7 @@ var wam;
 
 function loadWASM(){
     return new Promise((resolve, reject) => {
-	fetch('./lib/filter_c.wasm')
+	fetch('../lib/filter_c.wasm')
 	    .then(response => response.arrayBuffer())
 	    .then(buffer => {
 		c = performance.now();
@@ -15,7 +15,7 @@ function loadWASM(){
 		doneEvent = new Event('done');
 		script.addEventListener('done', buildWam);
 
-		script.src = './lib/filter_c.js';
+		script.src = '../lib/filter_c.js';
 		document.head.appendChild(script);
 
 		function buildWam() {
@@ -34,7 +34,7 @@ loadWASM().then(module => {
     let b = performance.now();
     console.log("[WASM] JS Loading time : " + Math.round((b-c)*100)/100 + ' ms');
     script = document.createElement('script');
-    script.src = './wasmFilter.js';
+    script.src = './src/wasmFilter.js';
     script.onload = function(){
 	loadScript('./Benchmark.js');
     }

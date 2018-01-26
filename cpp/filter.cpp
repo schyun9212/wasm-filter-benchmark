@@ -12,14 +12,13 @@ extern "C" {
 #include <stdio.h>
 #include <iostream>
 
-
 Context* contexts;
 
 extern "C" {
+
   void CreateShader(char *id){
     if (contexts){ delete contexts; }
     contexts = new Context(id);
-    // TODO: precompiling
   }
 
   void Filter(uint8_t *data, int width, int height, float alpha, int index){

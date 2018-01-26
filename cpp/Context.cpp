@@ -263,7 +263,6 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     GLint positionLoc = glGetAttribLocation(programObject[index], "position"); //position이라는 이름으로 바인딩된 lcation을 불러온다.
     GLint texCoordLoc = glGetAttribLocation(programObject[index], "texCoord");
     GLint textureLoc = glGetUniformLocation(programObject[index], "texture");
-
     // For "ERROR :GL_INVALID_OPERATION : glUniform1i: wrong uniform function for type"
     // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glUniform.xhtml
     float widthUniform = glGetUniformLocation(programObject[index], "width");
@@ -284,6 +283,7 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
 
     // Load the texture from the image buffer
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer); // GL_TEXTURE_2D에 buffur의 data를 specify
+
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //텍스쳐가 폴리곤보다 크거나 작을때 사용할 값을 설정하는 필터
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -311,9 +311,10 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     glEnableVertexAttribArray(positionLoc);
     glEnableVertexAttribArray(texCoordLoc);
 
+    /*
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
-
+    */
     // Draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0); // indice 순서로 삼각형을 그린다 =>사각형이 그려짐
 }
