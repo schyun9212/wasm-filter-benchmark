@@ -11,13 +11,15 @@ const loadImage = src => {
 	PreviewCTX = canvas.getContext('2d');
 	PreviewCTX.drawImage(img, 0, 0);
 	container.appendChild(canvas);
+	PreviewCanvas.hidden = true;
     });
     img.src = src;
 };
 
 window.addEventListener('load', () => {
 
-    loadImage('./image.png');
+    //loadImage('./image.png');
+    loadImage('./joan-miro.jpg');
 
     convert.addEventListener("click", () => {
 	while (container.lastChild.id != 'PreviewCanvas'){ container.removeChild(container.lastChild); }
@@ -36,133 +38,12 @@ window.addEventListener('load', () => {
 	let end = performance.now();
 	console.log('[WASM] AllocTime : ' + Math.round((end - start)*100)/100 + ' ms');
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// js WebGL Filtering
-	const jsWebGlCanvas = document.createElement('canvas');
-	jsWebGlCanvas.width = width;
-	jsWebGlCanvas.height = height;
-	jsWebGlCanvas.id = 'jsWebGlCanvas';
-	container.appendChild(jsWebGlCanvas);
-
-	start = performance.now();
-	vertexShaderSource = document.getElementById('vertexShader').text;
-
-	// Sharpen
-	//fragmentShaderSource = document.getElementById('SfragmentShader').text;
-	// Unsharp
-	fragmentShaderSource = document.getElementById('UfragmentShader').text;
-
-	const jsGlCtx = jsWebGlCanvas.getContext('webgl2');
-	var vertexShader = createShader(jsGlCtx, jsGlCtx.VERTEX_SHADER, vertexShaderSource);
-	var fragmentShader = createShader(jsGlCtx, jsGlCtx.FRAGMENT_SHADER, fragmentShaderSource);
-
-	var jsWebGlProgram = createProgram(jsGlCtx, vertexShader, fragmentShader);
-	end = performance.now();
-	console.log('[JS with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
-
-	start = performance.now();
-	jsWebGlRun(jsGlCtx, imageData, width, height, jsWebGlProgram);
-	end = performance.now();
-	console.log('[JS with WebGL] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// js Filtering
-	start = performance.now();
-	const jsCanvas = document.createElement('canvas');
-	jsCanvas.width = width
-	jsCanvas.height = height;
-	jsCanvas.id = 'jsCanvas';
-	const jsCtx = jsCanvas.getContext('2d');
-	let jsPixels = jsCtx.createImageData(width,height);
-
-	////////////////////////////////////////////////////////////////
-	// JS sharpen
-	//const jsResult = JSsharpen(imageData, width, height);
-
-	// JS unsharp
-	const jsResult = JSunsharp(imageData, width, height);
-	////////////////////////////////////////////////////////////////
-
-	jsPixels.data.set(jsResult);
-	jsCtx.putImageData(jsPixels, 0, 0);
-	container.appendChild(jsCanvas);
-	end = performance.now();
-	console.log('[JS] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// wasm WebGL Filtering
-	const wasmWebGlCanvas = document.createElement('canvas');
-	wasmWebGlCanvas.width = width;
-	wasmWebGlCanvas.height = height;
-	wasmWebGlCanvas.id = 'wasmWebGlCanvas';
-	const memID = _malloc(wasmWebGlCanvas.id.length + 1);
-	Module.stringToUTF8(wasmWebGlCanvas.id, memID, wasmWebGlCanvas.id.length + 1);
-	//const wasmGlCtx = wasmWebGlCanvas.getContext('webgl2');
-	container.appendChild(wasmWebGlCanvas);
-
-	let alpha = 1.0;
-	let brightness = 0;
-	start = performance.now();
-
-	//const filter = "Sharpen";
-	const filter = "Unsharp";
-	//const filter = "Brightness";
-	//brightness = 40/255;
-	//const filter = "Contrast";
-	//alpha = 0.3;
-
-	const memFilter = _malloc(filter.length+1);
-	Module.stringToUTF8(filter, memFilter, filter.length+1);
-	_CreateShader(width, height, alpha, brightness, memFilter, memID, 0);
-	end = performance.now();
-	console.log('[WASM with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
-
-	start = performance.now();
-	_Sharpen(FilterData.mem, 0);
-	end = performance.now();
-	console.log('[WASM with WebGL] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
-	_free(memID);
-	_free(memFilter);
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// wasm Filtering
-	start = performance.now();
-	const wasmCanvas = document.createElement('canvas');
-	wasmCanvas.width = width;
-	wasmCanvas.height = height;
-	wasmCanvas.id = 'wasmCanvas';
-	const wasmCtx = wasmCanvas.getContext('2d');
-
-	///////////////////////////////////////////////////////////////
-	// indexes for sharpen
-	//const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
-	//const divisor = 1, bias = 0, count = 1;
-
-	// indexes for unsharp
-	const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
-	const divisor = -256, bias = 0, count = 1;
-	///////////////////////////////////////////////////////////////
-
-	const kWidth = kernel[0].length, kHeight = kernel.length;
-	const kLen = kWidth * kHeight;
-	const flatKernel = kernel.reduce((acc, cur) => acc.concat(cur));
-	const memKernel = _malloc(kLen * Float32Array.BYTES_PER_ELEMENT);
-	HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
-	_ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
-	_free(memKernel);
-
-	let wasmPixels = wasmCtx.createImageData(width, height);
-	const wasmResult = HEAPU8.subarray(FilterData.out, FilterData.out + FilterData.len);
-	wasmPixels.data.set(wasmResult);
-	wasmCtx.putImageData(wasmPixels, 0, 0);
-	container.appendChild(wasmCanvas);
-	end = performance.now();
-	console.log('[WASM] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
-
-	// free memory
-	_free(FilterData.mem);
-	_free(FilterData.out);
-
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Filtering Process
+	//jsProcess(width, height, imageData);
+	//wasmProcess(width, height, FilterData);
+	//jsWebGlProcess(width, height, imageData, 10);
+	wasmWebGlProcess(width, height, FilterData, 10);
     });
     fileInput.addEventListener("change", event => loadImage(URL.createObjectURL(event.target.files[0])))
 });
@@ -237,4 +118,145 @@ function jsWebGlRun(glCtx, imageData, width, height, program){
     glCtx.enableVertexAttribArray(texCoordLoc);
 
     glCtx.drawElements(glCtx.TRIANGLES, 6, glCtx.UNSIGNED_SHORT, 0);
+}
+
+function jsProcess(width, height, imageData){
+    start = performance.now();
+    const jsCanvas = document.createElement('canvas');
+    jsCanvas.width = width
+    jsCanvas.height = height;
+    jsCanvas.id = 'jsCanvas';
+    const jsCtx = jsCanvas.getContext('2d');
+    let jsPixels = jsCtx.createImageData(width,height);
+
+    ////////////////////////////////////////////////////////////////
+    // JS sharpen
+    //const jsResult = JSsharpen(imageData, width, height);
+
+    // JS unsharp
+    const jsResult = JSunsharp(imageData, width, height);
+    ////////////////////////////////////////////////////////////////
+
+    jsPixels.data.set(jsResult);
+    jsCtx.putImageData(jsPixels, 0, 0);
+    container.appendChild(jsCanvas);
+    end = performance.now();
+    console.log('[JS] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
+    container.removeChild(jsCanvas);
+
+}
+
+function wasmProcess(width, height, FilterData){
+    start = performance.now();
+    const wasmCanvas = document.createElement('canvas');
+    wasmCanvas.width = width;
+    wasmCanvas.height = height;
+    wasmCanvas.id = 'wasmCanvas';
+    const wasmCtx = wasmCanvas.getContext('2d');
+
+    ///////////////////////////////////////////////////////////////
+    // indexes for sharpen
+    //const kernel = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]];
+    //const divisor = 1, bias = 0, count = 1;
+
+    // indexes for unsharp
+    const kernel = [[1, 4, 6, 4, 1], [4, 16, 24, 16, 4], [6, 24, -476, 24, 6], [4, 16, 24, 16, 4], [1, 4, 6, 4, 1]];
+    const divisor = -256, bias = 0, count = 1;
+    ///////////////////////////////////////////////////////////////
+
+    const kWidth = kernel[0].length, kHeight = kernel.length;
+    const kLen = kWidth * kHeight;
+    const flatKernel = kernel.reduce((acc, cur) => acc.concat(cur));
+    const memKernel = _malloc(kLen * Float32Array.BYTES_PER_ELEMENT);
+    HEAPF32.set(flatKernel, memKernel / Float32Array.BYTES_PER_ELEMENT);
+    _ConvFilter(FilterData.mem, width, height, memKernel, kWidth, kHeight, divisor, bias, count, FilterData.out);
+    _free(memKernel);
+
+    let wasmPixels = wasmCtx.createImageData(width, height);
+    const wasmResult = HEAPU8.subarray(FilterData.out, FilterData.out + FilterData.len);
+    wasmPixels.data.set(wasmResult);
+    wasmCtx.putImageData(wasmPixels, 0, 0);
+    container.appendChild(wasmCanvas);
+    end = performance.now();
+    console.log('[WASM] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
+    container.removeChild(wasmCanvas);
+
+}
+
+function jsWebGlProcess(width, height, imageData, loop){
+    const jsWebGlCanvas = document.createElement('canvas');
+    jsWebGlCanvas.width = width;
+    jsWebGlCanvas.height = height;
+    jsWebGlCanvas.id = 'jsWebGlCanvas';
+    container.appendChild(jsWebGlCanvas);
+
+    start = performance.now();
+    vertexShaderSource = document.getElementById('vertexShader').text;
+
+    // Sharpen
+    //fragmentShaderSource = document.getElementById('SfragmentShader').text;
+    // Unsharp
+    fragmentShaderSource = document.getElementById('UfragmentShader').text;
+
+    const jsGlCtx = jsWebGlCanvas.getContext('webgl2');
+    var vertexShader = createShader(jsGlCtx, jsGlCtx.VERTEX_SHADER, vertexShaderSource);
+    var fragmentShader = createShader(jsGlCtx, jsGlCtx.FRAGMENT_SHADER, fragmentShaderSource);
+
+    var jsWebGlProgram = createProgram(jsGlCtx, vertexShader, fragmentShader);
+    end = performance.now();
+    console.log('[JS with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
+
+    var Total = 0;
+    for (var i = 0 ; i < loop ; i++){
+	start = performance.now();
+	jsWebGlRun(jsGlCtx, imageData, width, height, jsWebGlProgram);
+	end = performance.now();
+	console.log('[JS with WebGL] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
+	Total += end - start;
+    }
+    console.log('Iteration : ' + loop);
+    console.log('[JS width WebGL] Total : ' + Math.round(Total*100)/100 );
+
+}
+
+function wasmWebGlProcess(width, height, FilterData, loop){
+    const wasmWebGlCanvas = document.createElement('canvas');
+    wasmWebGlCanvas.width = width;
+    wasmWebGlCanvas.height = height;
+    wasmWebGlCanvas.id = 'wasmWebGlCanvas';
+    const memID = _malloc(wasmWebGlCanvas.id.length + 1);
+    Module.stringToUTF8(wasmWebGlCanvas.id, memID, wasmWebGlCanvas.id.length + 1);
+    //const wasmGlCtx = wasmWebGlCanvas.getContext('webgl2');
+    container.appendChild(wasmWebGlCanvas);
+
+    let alpha = 1.0;
+    let brightness = 0;
+
+    start = performance.now();
+    //const filter = "Sharpen";
+    const filter = "Unsharp";
+    //const filter = "Brightness";
+    //brightness = 40/255;
+    //const filter = "Contrast";
+    //alpha = 0.3;
+
+    const memFilter = _malloc(filter.length+1);
+    Module.stringToUTF8(filter, memFilter, filter.length+1);
+    _CreateShader(width, height, alpha, brightness, memFilter, memID, 0);
+    end = performance.now();
+    console.log('[WASM with WebGL] Compile Time : ' + Math.round((end - start)*100)/100 + ' ms');
+
+    var Total = 0;
+    for (var i = 0 ; i < loop ; i++){
+	start = performance.now();
+	_Sharpen(FilterData.mem, 0);
+	end = performance.now();
+	console.log('[WASM with WebGL] Filtering Time : ' + Math.round((end - start)*100)/100 + ' ms');
+	Total += end - start;
+    }
+    console.log('Iteration : ' + loop);
+    console.log('[WASM width WebGL] Total : ' + Math.round(Total*100)/100 );
+
+    _free(memID);
+    _free(memFilter);
 }
