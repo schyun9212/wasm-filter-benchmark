@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+
+<!-- Copyright 2017 LG Electronics Inc. All Rights Reserved. -->
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+		<link rel="stylesheet" type="text/css" href="../index.css">
+	</head>
+	<body>
+		<div style='width:250px; height:100px; float: left'>
+		<input id="fileInput" type="file" accept="image/*" value="./image.png">
+		</br>
+		<button id="himage">1920x</button>
+		<button id="mimage">1280x</button>
+		<button id="simage">640x</button>
+		</br>
+		<button id="Sharpen">Sharpen</button>
+		<button id="Unsharp">Unsharp</button>
+		</br>
+		<button id="Hidden">Hidden</button>
+		</div>
+		<div id='resultTime' style='width:200px; height:100px; display: inline-block'>
+			<p id='Filter'></p>
+			<p id='FilteringTime'></p>
+		</div>
+		<div id="container" class="container" style="overflow: scroll"></div>
+		<script src = "./BenchJs.js"></script>
+	</body>
+</html>

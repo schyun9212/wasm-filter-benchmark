@@ -17,5 +17,19 @@ mergeInto(LibraryManager.library, {
             _Csv += '\n';
             console.log(_Csv);
         }
+    },
+    st: null,
+    et: null,
+    Itime_js__deps: [
+        'st',
+        'et'
+    ],
+    Itime_js: function (index) {
+        if (index == 0) {
+            _st = performance.now();
+        } else {
+            _et = performance.now();
+            console.log(_et - _st);
+        }
     }
 });

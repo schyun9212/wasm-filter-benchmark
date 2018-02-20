@@ -7,3 +7,14 @@ function Mtime_js(index){
     Stime = Etime;
     if (index == 20) { Csv += '\n'; console.log(Csv); }
 }
+
+var st, et;
+function Itime_js(index){
+    if (index == 0){
+	st = performance.now();
+    }
+    else {
+	et = performance.now();
+	console.log(et-st);
+    }
+}

@@ -1,5 +1,10 @@
 #include "Context.h"
 
+extern "C"{
+    extern void Mtime_js(int a);
+    extern void Itime_js(int a);
+}
+
 // Shaders
 std::string vertex_source =
     "attribute vec4 position;   \n"
@@ -200,7 +205,9 @@ Context::Context (char * id) {
     attrs.minorVersion = 0;
 
     context = emscripten_webgl_create_context(id, &attrs);
+    Mtime_js(0);
     emscripten_webgl_make_context_current(context);
+    Mtime_js(21);
 
     GLuint vertexShader;
     GLuint fragmentShader;
@@ -251,9 +258,14 @@ Context::~Context (void) {
 
 void Context::run (uint8_t* buffer, int width, int height, float alpha, int index) {
 
+    Itime_js(0);
+
     // Make the context current and use the program
+    Mtime_js(0);
     emscripten_webgl_make_context_current(context);
+    Mtime_js(1);
     glUseProgram( programObject[index] );
+    Mtime_js(2);
 
     GLuint texId;
     GLuint vertexObject;
@@ -263,6 +275,9 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     GLint positionLoc = glGetAttribLocation(programObject[index], "position"); //position이라는 이름으로 바인딩된 lcation을 불러온다.
     GLint texCoordLoc = glGetAttribLocation(programObject[index], "texCoord");
     GLint textureLoc = glGetUniformLocation(programObject[index], "texture");
+
+    Mtime_js(3);
+
     // For "ERROR :GL_INVALID_OPERATION : glUniform1i: wrong uniform function for type"
     // https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glUniform.xhtml
     float widthUniform = glGetUniformLocation(programObject[index], "width");
@@ -272,20 +287,32 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     glUniform1f(heightUniform, (float) height);
     glUniform1f(alphaUniform, (float) alpha);
 
+    Mtime_js(4);
+
 
     // Generate a texture object
     glGenTextures(1, &texId); // texture 1개를 generate하고 이름을 저장
-    glUniform1i(textureLoc, 0); // 초기화 (쓸모없음)
+    Mtime_js(5);
+    glUniform1i(textureLoc, 0); // 초기화
+    Mtime_js(5);
+    glActiveTexture(GL_TEXTURE0);
+
+    Mtime_js(5);
 
     // Bind it
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texId); //texId에 있는 값(name)을 GL_TEXTURE_2D에 바인딩
+
+    Mtime_js(6);
 
     // Load the texture from the image buffer
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer); // GL_TEXTURE_2D에 buffur의 data를 specify
 
+    Mtime_js(7);
+
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //텍스쳐가 폴리곤보다 크거나 작을때 사용할 값을 설정하는 필터
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    Mtime_js(8);
 
     // Vertex data of texture bounds
     GLfloat vVertices[] = { -1.0,  1.0, 0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 1.0,
@@ -293,23 +320,35 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
     glGenBuffers(1, &vertexObject);
+    Mtime_js(9);
     glBindBuffer(GL_ARRAY_BUFFER, vertexObject);
+    Mtime_js(10);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW); // xyz, 텍스쳐xy
+    Mtime_js(11);
 
     glGenBuffers(1, &indexObject);
+    Mtime_js(12);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexObject);
+    Mtime_js(13);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    Mtime_js(14);
 
     // Set the viewport
     glViewport(0, 0, width, height);
+    Mtime_js(15);
     glClear(GL_COLOR_BUFFER_BIT);
+    Mtime_js(16);
 
     // Load and enable the vertex position and texture coordinates
     glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0); // xyz 구성 = 3, float = GLFLOAT, no normalize, (3+2) * 4, address 0
+    Mtime_js(17);
     glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*) (3 * sizeof(GLfloat))); // x,y 구성 =2, float, no normalize, (3+2)*4, 0+3*4
+    Mtime_js(18);
 
     glEnableVertexAttribArray(positionLoc);
+    Mtime_js(19);
     glEnableVertexAttribArray(texCoordLoc);
+    Mtime_js(20);
 
     /*
     glEnable(GL_BLEND);
@@ -317,4 +356,7 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     */
     // Draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0); // indice 순서로 삼각형을 그린다 =>사각형이 그려짐
+    Mtime_js(21);
+
+    Itime_js(1);
 }
