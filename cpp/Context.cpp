@@ -260,7 +260,7 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     GLuint indexObject;
 
     // Get the attribute/sampler locations
-    GLint positionLoc = glGetAttribLocation(programObject[index], "position"); //position이라는 이름으로 바인딩된 lcation을 불러온다.
+    GLint positionLoc = glGetAttribLocation(programObject[index], "position");
     GLint texCoordLoc = glGetAttribLocation(programObject[index], "texCoord");
     GLint textureLoc = glGetUniformLocation(programObject[index], "texture");
 
@@ -274,30 +274,26 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     glUniform1f(alphaUniform, (float) alpha);
 
     // Generate a texture object
-    glGenTextures(1, &texId); // texture 1개를 generate하고 이름을 저장
-    glUniform1i(textureLoc, 0); // 초기화
+    glGenTextures(1, &texId);
+    glUniform1i(textureLoc, 0);
     glActiveTexture(GL_TEXTURE0);
 
-
     // Bind it
-    glBindTexture(GL_TEXTURE_2D, texId); //texId에 있는 값(name)을 GL_TEXTURE_2D에 바인딩
-
+    glBindTexture(GL_TEXTURE_2D, texId);
 
     // Load the texture from the image buffer
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer); // GL_TEXTURE_2D에 buffur의 data를 specify
-
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //텍스쳐가 폴리곤보다 크거나 작을때 사용할 값을 설정하는 필터
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
 
     // Vertex data of texture bounds
     GLfloat vVertices[] = { -1.0,  1.0, 0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 1.0,
-                             1.0, -1.0, 0.0, 1.0,  1.0, 1.0, 1.0, 0.0, 1.0,  0.0}; // UV좌표 (0,0)->(0,1)->(1,1)->(1,0) -> 모든 텍스쳐 그림
+                             1.0, -1.0, 0.0, 1.0,  1.0, 1.0, 1.0, 0.0, 1.0,  0.0};
     GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
     glGenBuffers(1, &vertexObject);
     glBindBuffer(GL_ARRAY_BUFFER, vertexObject);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW); // xyz, 텍스쳐xy
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &indexObject);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexObject);
@@ -308,8 +304,8 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Load and enable the vertex position and texture coordinates
-    glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0); // xyz 구성 = 3, float = GLFLOAT, no normalize, (3+2) * 4, address 0
-    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*) (3 * sizeof(GLfloat))); // x,y 구성 =2, float, no normalize, (3+2)*4, 0+3*4
+    glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
+    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*) (3 * sizeof(GLfloat)));
 
     glEnableVertexAttribArray(positionLoc);
     glEnableVertexAttribArray(texCoordLoc);
@@ -319,6 +315,6 @@ void Context::run (uint8_t* buffer, int width, int height, float alpha, int inde
     glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
     */
     // Draw
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0); // indice 순서로 삼각형을 그린다 =>사각형이 그려짐
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
 }
