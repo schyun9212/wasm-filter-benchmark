@@ -25,12 +25,11 @@ function loadWASM(){
     });
 }
 
-var c;
 var a = performance.now();
 loadWASM().then(module => {
     wam = module;
     let b = performance.now();
-    let result = 'WASM Loading Time : ' + (Math.round((b-c)*100)/100) + ' ms';
+    let result = 'WASM Loading Time : ' + (Math.round((b-a)*100)/100) + ' ms';
     document.getElementById('loadingTime').innerHTML = result;
     //console.log("[WASM] JS Loading time : " + Math.round((b-c)*100)/100 + ' ms');
     script = document.createElement('script');
