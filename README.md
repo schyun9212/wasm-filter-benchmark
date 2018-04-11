@@ -1,6 +1,6 @@
-# WebAssembly Benchmark Applications
+# WASM Filtering Benchmark 
 
-***
+The applications in this repository is for testing image filtering performance written in JavaScript and WebAssembly. For each language, they are implemented in case of using WebGL and not using WebGL.
 
 ## How to use
 
